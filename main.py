@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 
 import re
+import os
+import sys
 import time
 import random
 import argparse
@@ -68,12 +70,12 @@ class Shodan:
 		req = requests.get(self.url, headers=self.header)
 		req.encoding = "utf-8"
 		if req.status_code == 200:
-			return req.status_code
+			return req
 		elif req.status_code == 503:
 			print("[503]", self.url)
 			self.spider()
 		else:
-			return req.status_code
+			return req
 
 def read_lines(path):
 	if not os.path.exists(path):
@@ -89,16 +91,24 @@ def ipFormat(ip):
 	return ips
 
 def download(filename, data):
-	filename = filename.replace("/", "_")+".txt"
-	with open(filename, "a+") as f:
+	dir_ = filename[:filename.rfind(".")-1]
+	if not os.path.exists(dir_):
+		os.mkdir(dir_)
+
+	if sys.platform == "win32":
+		path = os.getcwd() + "\\" + dir_ + "\\"  + filename.replace("/", "_")+".txt"
+	else:
+		path = os.getcwd() + "/" + dir_ + "/"  +  filename.replace("/", "_")+".txt"
+
+	with open(path, "a+") as f:
 		f.write(str(data)+"\n")
 
 def main(ip):
 	shodan = Shodan(ip)
-	time.sleep(random.randint(5,8))
+	time.sleep(random.randint(3,8))
 	req = shodan.spider()
-	if req != 200:
-		print("[status_code]  {}.  ip: {}".format(req, ip))
+	if req.status_code != 200:
+		print("[status_code]  {}.  ip: {}".format(req.status_code, ip))
 		return
 	info   = shodan.infoFormat(req.text)
 	ports = shodan.portFormat(req.text)
